@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Cartellino di lavorazione</title>
+<meta name="theme-color" content="#1e1e1e">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+  body {
+    margin: 0; padding: 0; font-family: 'Roboto', sans-serif; background-color: #121212; color: #e0e0e0;
+    display: flex; flex-direction: column; align-items: center; padding-top: 60px; padding-bottom: 120px; overflow-x: hidden;
+  }
+
+  .top-bar, .bottom-bar {
+    position: fixed; left: 0; width: 100%; background: #1e1e1e; border-color: #333; border-style: solid;
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+  }
+  .top-bar { top: 0; border-bottom-width: 1px; padding: 15px 0; }
+  .bottom-bar { bottom: 0; border-top-width: 1px; height: auto; gap: 10px; padding: 10px; box-sizing: border-box; flex-wrap: wrap;}
+
+  .sheet-container {
+    width: 96%; max-width: 1200px; background-color: #1e1e1e; padding: 20px;
+    border: 1px solid #333; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box;
+  }
+
+  h1, h2 { margin: 0; text-transform: uppercase; }
+  h2 { font-size: 14px; color: #4caf50; border-bottom: 1px solid #4caf50; margin-top: 20px; margin-bottom: 15px; padding-bottom: 5px; }
+
+  input, select, textarea {
+    background: #252525; border: 1px solid #444; border-radius: 4px; color: #fff; width: 100%; 
+    font-family: inherit; font-size: 14px; padding: 8px; box-sizing: border-box;
+  }
+  input:focus, select:focus, textarea:focus { border-color: #4caf50; outline: none; }
+  label { font-size: 11px; color: #aaa; font-weight: bold; display: block; margin-bottom: 4px; text-transform: uppercase;}
+
+  .header-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+
+  .card-op { background: #1a1a1a; border: 1px solid #333; border-left: 4px solid #4caf50; padding: 15px; border-radius: 8px; margin-bottom: 25px; }
+  .op-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
+  /* Header modificato: rimossa la colonna del modello */
+  .op-header { display: grid; grid-template-columns: 80px 1fr; gap: 15px; margin-bottom: 15px; align-items: end;}
+  .op-body { margin-bottom: 15px; }
+  
+  .fasi-container { background: #222; padding: 10px; border-radius: 6px; border: 1px solid #333;}
+  .fase-row {
+      display: grid; grid-template-columns: 60px minmax(150px, 2fr) repeat(5, minmax(65px, 1fr)) auto;
+      gap: 8px; align-items: end; margin-bottom: 15px; background: #2a2a2a; padding: 10px; border-radius: 6px;
+  }
+  .fase-row > div { display: flex; flex-direction: column; }
+
+  .toolbar { display: flex; background: #333; border-radius: 4px; overflow: hidden; border: 1px solid #444; }
+  .toolbar button { background: transparent; color: #fff; border: none; padding: 8px 12px; cursor: pointer; font-size: 14px; font-weight: bold; border-right: 1px solid #444; border-radius: 0; }
+  .toolbar button:last-child { border-right: none; }
+  .toolbar button:hover { background: #4caf50; color:#fff;}
+  .toolbar .btn-copy:hover { background: #ffeb3b; color: #000; }
+  .toolbar .btn-del { color: #ff5252; }
+  .toolbar .btn-del:hover { background: #ff5252; color: #fff; }
+
+  button { padding: 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; text-transform: uppercase; font-size: 12px; transition: all 0.2s ease;}
+  .btn-print { background: #fff; color: #000; flex: 2; min-width: 150px; font-size: 14px;}
+  .btn-save { background: #00bcd4; flex: 1; min-width: 100px; font-size: 12px;}
+  .btn-load { background: #ff9800; flex: 1; min-width: 100px; font-size: 12px;}
+  .btn-reset { background: #d32f2f; flex: 1; min-width: 80px; font-size: 12px;}
+  .btn-add-op { background: #4caf50; width: 100%; font-size: 15px; padding: 15px; margin-top: 10px; }
+  .btn-add-fase { background: #2979ff; width: 100%; margin-top: 5px; }
+  
+  /* REGOLE OTTIMIZZATE PER SMARTPHONE */
+  @media screen and (max-width: 900px) {
+      .op-header { grid-template-columns: 1fr; }
+      .fase-row {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+      }
+      .fase-row > div { width: 100%; box-sizing: border-box; }
+      .col-ctrl { margin-top: 5px; }
+      .col-ctrl .toolbar { width: 100%; display: flex; }
+      .col-ctrl .toolbar button { flex: 1; padding: 14px 0; } 
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+    <span style="color:#fff; font-weight:bold; font-size:16px;">CICLO DI LAVORAZIONE</span>
+</div>
+
+<div class="sheet-container" id="main-form">
+    <h2>Dati Studente</h2>
+    <div class="header-grid">
+        <div><label>Allievo</label><input type="text" id="stdName"></div>
+        <div><label>Classe</label><input type="text" id="stdClass"></div>
+        <div><label>A.S.</label><input type="text" id="stdAS" value="2025/26"></div>
+        <div><label>Data Consegna</label><input type="date" id="stdDate"></div>
+    </div>
+
+    <h2>Dati Elemento Finito</h2>
+    <div class="header-grid">
+        <div><label>Denominazione / Particolare</label><input type="text" id="finName" placeholder="Es. Perno flangiato"></div>
+        <div><label>Disegno N°</label><input type="text" id="finDraw"></div>
+        <div><label>Trattamenti</label><input type="text" id="finTreat"></div>
+        <div><label>Peso Finito [kg]</label><input type="number" id="finWeight" inputmode="decimal"></div>
+    </div>
+
+    <h2>Dati Semilavorato</h2>
+    <div class="header-grid">
+        <div><label>Materiale</label><input type="text" id="matName"></div>
+        <div><label>Ricavato da</label><input type="text" id="matRaw"></div>
+        <div><label>Rm [N/mm²]</label><input type="number" id="matRm" inputmode="numeric"></div>
+        <div><label>HBW</label><input type="number" id="matHBW" inputmode="numeric"></div>
+        <div><label>Peso Grezzo [kg]</label><input type="number" id="matMass" inputmode="decimal"></div>
+        <div><label>Quantità</label><input type="number" id="matQty" value="1" inputmode="numeric"></div>
+    </div>
+
+    <h2>Operazioni e Fasi</h2>
+    <div id="operazioni-list"></div>
+
+    <button class="btn-add-op" onclick="aggiungiOperazione()">+ Aggiungi Nuova Operazione</button>
+</div>
+
+<input type="file" id="fileLoader" style="display:none;" accept=".json" onchange="gestisciCaricamentoFile(event)">
+
+<div class="bottom-bar">
+    <button class="btn-save" onclick="salvaSuFile()">SCARICA BOZZA</button>
+    <button class="btn-load" onclick="document.getElementById('fileLoader').click()">CARICA BOZZA</button>
+    <button class="btn-print" onclick="generaPDF()">STAMPA PDF</button>
+    <button class="btn-reset" id="btnReset" onclick="resetDati()">RESET</button>
+</div>
+
+<script>
+    window.onload = function() {
+        if(localStorage.getItem('cartellino_bozza')) eseguiCaricamentoNascosto();
+        else aggiungiOperazione();
+        setInterval(salvaInMemoria, 2000);
+    };
+
+    function generaIdUnivoco() { return Math.random().toString(36).substr(2, 9); }
+
+    function aggiungiOperazione(opData = null) {
+        const opId = generaIdUnivoco();
+        const cardsCount = document.querySelectorAll('.card-op').length + 1;
+        
+        const defaultNum = (opData && opData.num) ? opData.num : (cardsCount * 10);
+        // Manteniamo la compatibilità in lettura con vecchi salvataggi unendo Macchina e Modello se presenti
+        let savedMacName = opData ? (opData.macName || opData.mac || '') : '';
+        if (opData && opData.macDesc) {
+            savedMacName += savedMacName ? ` (${opData.macDesc})` : opData.macDesc;
+        }
+        
+        const savedTools = opData ? (opData.tools || '') : '';
+        
+        const html = `
+            <div class="card-op" id="operazione-${opId}">
+                <div class="op-top-bar">
+                    <h3 style="margin:0; color:#4caf50;">OPERAZIONE</h3>
+                    <div class="toolbar">
+                        <button title="Sposta Su" onclick="spostaOperazione(this, -1)">▲</button>
+                        <button title="Sposta Giù" onclick="spostaOperazione(this, 1)">▼</button>
+                        <button class="btn-copy" title="Duplica" onclick="duplicaOperazione('${opId}')">📋</button>
+                        <button class="btn-del" title="Rimuovi" onclick="rimuoviOperazione('${opId}')">✕</button>
+                    </div>
+                </div>
+                <div class="op-header">
+                    <div>
+                        <label>Num</label>
+                        <input type="text" class="op-num" value="${defaultNum}" inputmode="numeric" style="font-weight:bold; color:#4caf50;" onchange="rinumeraFasiContainer('${opId}')">
+                    </div>
+                    <div>
+                        <label>Macchina / Postazione</label>
+                        <input type="text" class="op-mac-name" placeholder="Es. Tornio Parallelo CNC" value="${savedMacName}">
+                    </div>
+                </div>
+                <div class="op-body">
+                    <label>Utensili, Attrezzi e Calibri</label>
+                    <textarea class="op-tools" rows="2" placeholder="Elenco attrezzatura...">${savedTools}</textarea>
+                </div>
+                <div class="fasi-container" id="fasi-${opId}">
+                    <label style="color:#2979ff; margin-bottom:10px; font-size:12px;">FASI DI LAVORAZIONE</label>
+                </div>
+                <button class="btn-add-fase" onclick="aggiungiFase('${opId}')">+ AGGIUNGI FASE</button>
+            </div>
+        `;
+        document.getElementById('operazioni-list').insertAdjacentHTML('beforeend', html);
+        
+        if (opData && opData.fasi && Array.isArray(opData.fasi) && opData.fasi.length > 0) { 
+            opData.fasi.forEach(fData => aggiungiFase(opId, fData)); 
+        } else { 
+            aggiungiFase(opId); 
+        }
+    }
+
+    function duplicaOperazione(opId) {
+        const opCard = document.getElementById(`operazione-${opId}`);
+        const opData = {
+            num: opCard.querySelector('.op-num').value, 
+            macName: opCard.querySelector('.op-mac-name').value,
+            tools: opCard.querySelector('.op-tools').value,
+            fasi: Array.from(opCard.querySelectorAll('.fase-row')).map(fase => ({
+                num: fase.querySelector('.fase-num').value, desc: fase.querySelector('.fase-desc').value,
+                vt: fase.querySelector('.fase-vt').value, n: fase.querySelector('.fase-n').value,
+                f: fase.querySelector('.fase-f').value, p: fase.querySelector('.fase-p').value, tc: fase.querySelector('.fase-tc').value
+            }))
+        };
+        aggiungiOperazione(opData); rinumeraTutteOperazioni();
+    }
+
+    function rimuoviOperazione(opId) { document.getElementById(`operazione-${opId}`).remove(); rinumeraTutteOperazioni(); }
+    
+    function spostaOperazione(btn, dir) {
+        const card = btn.closest('.card-op'); const list = document.getElementById('operazioni-list');
+        if (dir === -1 && card.previousElementSibling) list.insertBefore(card, card.previousElementSibling);
+        else if (dir === 1 && card.nextElementSibling) list.insertBefore(card.nextElementSibling, card);
+        rinumeraTutteOperazioni();
+    }
+
+    function rinumeraTutteOperazioni() {
+        document.querySelectorAll('.card-op').forEach((op, index) => {
+            op.querySelector('.op-num').value = (index + 1) * 10; rinumeraFasiContainer(op.id.replace('operazione-', ''));
+        });
+    }
+
+    function aggiungiFase(opId, fData = null) {
+        const c = document.getElementById(`fasi-${opId}`); 
+        const opCard = document.getElementById(`operazione-${opId}`);
+        const opNum = opCard.querySelector('.op-num').value; 
+        const fNum = (fData && fData.num) ? fData.num : `${opNum}.${c.querySelectorAll('.fase-row').length + 1}`;
+
+        const html = `
+            <div class="fase-row">
+                <div class="col-num"><label>N°</label><input type="text" class="fase-num" value="${fNum}" readonly style="background:#333; color:#ccc; font-size:12px;"></div>
+                <div class="col-desc"><label>Descrizione Fase</label><input type="text" class="fase-desc" value="${fData ? (fData.desc || '') : ''}"></div>
+                <div class="col-vt"><label>Vt [m/min]</label><input type="number" class="fase-vt" value="${fData ? (fData.vt || '') : ''}" inputmode="decimal"></div>
+                <div class="col-n"><label>n [rpm]</label><input type="number" class="fase-n" value="${fData ? (fData.n || '') : ''}" inputmode="decimal"></div>
+                <div class="col-f"><label>f [mm/g]</label><input type="text" class="fase-f" value="${fData ? (fData.f || '') : ''}" inputmode="decimal"></div>
+                <div class="col-p"><label>ap [mm]</label><input type="number" class="fase-p" value="${fData ? (fData.p || '') : ''}" inputmode="decimal"></div>
+                <div class="col-tc"><label>tc [min]</label><input type="number" class="fase-tc" value="${fData ? (fData.tc || '') : ''}" inputmode="decimal"></div>
+                <div class="col-ctrl"><div class="toolbar"><button title="Su" onclick="spostaFase(this, -1)">▲</button><button title="Giù" onclick="spostaFase(this, 1)">▼</button><button class="btn-copy" title="Copia" onclick="duplicaFase(this, '${opId}')">📋</button><button class="btn-del" title="Elimina" onclick="rimuoviFase(this, '${opId}')">✕</button></div></div>
+            </div>
+        `;
+        c.insertAdjacentHTML('beforeend', html);
+    }
+
+    function duplicaFase(btn, opId) {
+        const row = btn.closest('.fase-row');
+        aggiungiFase(opId, {
+            num: "", desc: row.querySelector('.fase-desc').value, vt: row.querySelector('.fase-vt').value,
+            n: row.querySelector('.fase-n').value, f: row.querySelector('.fase-f').value,
+            p: row.querySelector('.fase-p').value, tc: row.querySelector('.fase-tc').value
+        });
+        rinumeraFasiContainer(opId);
+    }
+
+    function rimuoviFase(btn, opId) { btn.closest('.fase-row').remove(); rinumeraFasiContainer(opId); }
+
+    function spostaFase(btn, dir) {
+        const row = btn.closest('.fase-row'); const c = row.parentElement;
+        if (dir === -1 && row.previousElementSibling?.classList.contains('fase-row')) c.insertBefore(row, row.previousElementSibling);
+        else if (dir === 1 && row.nextElementSibling?.classList.contains('fase-row')) c.insertBefore(row.nextElementSibling, row);
+        rinumeraFasiContainer(c.id.replace('fasi-', ''));
+    }
+
+    function rinumeraFasiContainer(opId) {
+        const opCard = document.getElementById(`operazione-${opId}`); if (!opCard) return;
+        const opNum = opCard.querySelector('.op-num').value;
+        opCard.querySelectorAll('.fase-row').forEach((fase, idx) => fase.querySelector('.fase-num').value = `${opNum}.${idx + 1}`);
+    }
+
+    let resetTimer = null;
+
+    function resetDati() {
+        const btn = document.getElementById('btnReset');
+        
+        if (btn.innerText === "RESET") {
+            btn.innerText = "CONFERMA?";
+            btn.style.backgroundColor = "#b71c1c"; 
+            
+            resetTimer = setTimeout(() => {
+                btn.innerText = "RESET";
+                btn.style.backgroundColor = "#d32f2f";
+            }, 3000);
+            
+        } else {
+            clearTimeout(resetTimer);
+            btn.innerText = "RESET";
+            btn.style.backgroundColor = "#d32f2f";
+            
+            localStorage.removeItem('cartellino_bozza'); 
+            document.querySelectorAll('.header-grid input').forEach(inp => inp.value = '');
+            document.getElementById('stdAS').value = '2025/26'; 
+            document.getElementById('matQty').value = '1';
+            document.getElementById('operazioni-list').innerHTML = '';
+            aggiungiOperazione(); 
+            window.scrollTo(0, 0);
+        }
+    }
+
+    function ottieniDatiAttuali() {
+        const getVal = id => { const el = document.getElementById(id); return el ? el.value : ""; };
+        return {
+            stdName: getVal('stdName'), stdClass: getVal('stdClass'), stdAS: getVal('stdAS'), stdDate: getVal('stdDate'),
+            finName: getVal('finName'), finDraw: getVal('finDraw'), finTreat: getVal('finTreat'), finWeight: getVal('finWeight'),
+            matName: getVal('matName'), matRaw: getVal('matRaw'), matQty: getVal('matQty'),
+            matRm: getVal('matRm'), matMass: getVal('matMass'), matHBW: getVal('matHBW'),
+            operazioni: Array.from(document.querySelectorAll('.card-op')).map(op => ({
+                num: op.querySelector('.op-num') ? op.querySelector('.op-num').value : "", 
+                macName: op.querySelector('.op-mac-name') ? op.querySelector('.op-mac-name').value : "", 
+                tools: op.querySelector('.op-tools') ? op.querySelector('.op-tools').value : "",
+                fasi: Array.from(op.querySelectorAll('.fase-row')).map(fase => ({
+                    num: fase.querySelector('.fase-num') ? fase.querySelector('.fase-num').value : "", 
+                    desc: fase.querySelector('.fase-desc') ? fase.querySelector('.fase-desc').value : "", 
+                    vt: fase.querySelector('.fase-vt') ? fase.querySelector('.fase-vt').value : "",
+                    n: fase.querySelector('.fase-n') ? fase.querySelector('.fase-n').value : "", 
+                    f: fase.querySelector('.fase-f') ? fase.querySelector('.fase-f').value : "", 
+                    p: fase.querySelector('.fase-p') ? fase.querySelector('.fase-p').value : "", 
+                    tc: fase.querySelector('.fase-tc') ? fase.querySelector('.fase-tc').value : ""
+                }))
+            }))
+        };
+    }
+
+    function salvaInMemoria() { try { localStorage.setItem('cartellino_bozza', JSON.stringify(ottieniDatiAttuali())); } catch(e) {} }
+
+    function eseguiCaricamentoNascosto() {
+        try { 
+            const savedData = localStorage.getItem('cartellino_bozza');
+            if(savedData) popolaCampi(JSON.parse(savedData)); 
+        } catch (err) {}
+    }
+
+    function salvaSuFile() {
+        const dataStr = JSON.stringify(ottieniDatiAttuali(), null, 2);
+        const blob = new Blob([dataStr], { type: "application/json" }); const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url;
+        let nome = document.getElementById('stdName').value.trim() || "Studente";
+        let pezzo = document.getElementById('finName').value.trim() || "Pezzo";
+        a.download = `${nome}_${pezzo}.json`.replace(/\s+/g, "_");
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
+
+    function gestisciCaricamentoFile(event) {
+        const file = event.target.files[0]; 
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) { 
+            try { 
+                const jsonData = JSON.parse(e.target.result);
+                popolaCampi(jsonData); 
+                alert("Dati caricati correttamente dal file!");
+            } catch (err) { 
+                alert("Si è verificato un errore nella lettura del file. Verifica che il file non sia corrotto."); 
+            } finally { 
+                event.target.value = ""; 
+            } 
+        };
+        reader.readAsText(file, "UTF-8");
+    }
+
+    function popolaCampi(data) {
+        if(!data) return;
+        const setV = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ""; };
+
+        setV('stdName', data.stdName); setV('stdClass', data.stdClass);
+        setV('stdAS', data.stdAS || "2025/26"); setV('stdDate', data.stdDate);
+        setV('finName', data.finName); setV('finDraw', data.finDraw);
+        setV('finTreat', data.finTreat); setV('finWeight', data.finWeight);
+        setV('matName', data.matName); setV('matRaw', data.matRaw);
+        setV('matQty', data.matQty || "1"); setV('matRm', data.matRm);
+        setV('matMass', data.matMass); setV('matHBW', data.matHBW);
+        
+        document.getElementById('operazioni-list').innerHTML = "";
+        if (data.operazioni && Array.isArray(data.operazioni) && data.operazioni.length > 0) {
+            data.operazioni.forEach(op => aggiungiOperazione(op));
+        } else {
+            aggiungiOperazione();
+        }
+    }
+
+    async function generaPDF() {
+        if(!window.jspdf) { alert("Attendi caricamento librerie..."); return; }
+        const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4'); 
+        const getVal = id => document.getElementById(id).value;
+        
+        doc.setFont("helvetica", "bold"); doc.setFontSize(16); doc.text("CICLO DI LAVORAZIONE", 105, 14, {align: "center"});
+        
+        const topY = 22; const colW = 190 / 4; doc.setLineWidth(0.3); doc.setFontSize(10);
+        doc.rect(10, topY, 190, 8); doc.line(10+colW, topY, 10+colW, topY+16); doc.line(10+colW*2, topY, 10+colW*2, topY+16); doc.line(10+colW*3, topY, 10+colW*3, topY+16);
+        doc.setFontSize(8); doc.text("STUDENTE", 11, topY+3); doc.text("CLASSE", 11+colW, topY+3); doc.text("A.S.", 11+colW*2, topY+3); doc.text("DATA CONSEGNA", 11+colW*3, topY+3);
+        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.rect(10, topY+8, 190, 8); 
+        doc.text(getVal('stdName'), 11, topY+14); doc.text(getVal('stdClass'), 11+colW, topY+14); doc.text(getVal('stdAS'), 11+colW*2, topY+14); doc.text(getVal('stdDate'), 11+colW*3, topY+14);
+
+        const matY = topY + 22;
+        doc.rect(10, matY, 95, 26); doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.text("CARATTERISTICHE ELEMENTO FINITO", 12, matY + 4); doc.line(10, matY+6, 105, matY+6);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Denominazione: ${getVal('finName')}`, 12, matY + 11); doc.text(`Disegno N°: ${getVal('finDraw')}`, 12, matY + 16); doc.text(`Peso Finito [kg]: ${getVal('finWeight')}`, 12, matY + 21); doc.text(`Trattamenti: ${getVal('finTreat')}`, 60, matY + 21);
+
+        doc.rect(105, matY, 95, 26); doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.text("CARATTERISTICHE MATERIALE E SEMILAVORATO", 107, matY + 4); doc.line(105, matY+6, 200, matY+6);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.text(`Materiale: ${getVal('matName')}`, 107, matY + 11); doc.text(`Rm [N/mm2]: ${getVal('matRm')}`, 160, matY + 11); doc.text(`Ricavato da: ${getVal('matRaw')}`, 107, matY + 16); doc.text(`HBW: ${getVal('matHBW')}`, 160, matY + 16); doc.text(`Peso Grezzo [kg]: ${getVal('matMass')}`, 107, matY + 21); doc.text(`Quantità: ${getVal('matQty')}`, 160, matY + 21);
+
+        const tableBody = [];
+        document.querySelectorAll('.card-op').forEach((op) => {
+            const fasi = op.querySelectorAll('.fase-row');
+            
+            const macName = op.querySelector('.op-mac-name').value;
+
+            tableBody.push({ 
+                isOpHeader: true, isFirstOfOp: true, isLastOfOp: fasi.length === 0, 
+                data: [ 
+                    op.querySelector('.op-num').value, 
+                    "", 
+                    macName, 
+                    op.querySelector('.op-tools').value, 
+                    "", "", "", "", "" 
+                ] 
+            });
+
+            fasi.forEach((fase, fIndex) => {
+                tableBody.push({ 
+                    isOpHeader: false, isFirstOfOp: false, isLastOfOp: (fIndex === fasi.length - 1), 
+                    data: [ 
+                        "", 
+                        `${fase.querySelector('.fase-num').value} - ${fase.querySelector('.fase-desc').value}`, 
+                        "", 
+                        "", 
+                        fase.querySelector('.fase-vt').value, 
+                        fase.querySelector('.fase-n').value, 
+                        fase.querySelector('.fase-f').value, 
+                        fase.querySelector('.fase-p').value, 
+                        fase.querySelector('.fase-tc').value 
+                    ] 
+                });
+            });
+        });
+
+        doc.autoTable({
+            startY: matY + 30,
+            head: [['N°', 'DESCRIZIONE OPERAZIONE', 'MACCHINA', 'UTENSILI E\nCALIBRI', 'vc\n[m/min]', 'n\n[rpm]', 'f\n[mm/g]', 'ap\n[mm]', 'tc\n[min]']],
+            body: tableBody.map(r => r.data), theme: 'grid',
+            didParseCell: function(data) {
+                if (data.section === 'body') {
+                    const rowData = tableBody[data.row.index];
+                    data.cell.styles.lineWidth = { top: rowData.isFirstOfOp ? 0.3 : 0, bottom: rowData.isLastOfOp ? 0.3 : 0, left: 0.1, right: 0.1 };
+                    
+                    if (rowData.isOpHeader) {
+                        data.cell.styles.fillColor = [255, 255, 255]; 
+                        data.cell.styles.textColor = [0, 0, 0]; 
+                        data.cell.styles.valign = 'top'; 
+                        
+                        if (data.column.index === 0) data.cell.styles.fontStyle = 'bold';
+                        
+                        // Spazio per lo schizzo a 60mm
+                        if (data.column.index === 1) data.cell.styles.minCellHeight = 60; 
+                        
+                        if (data.column.index === 2 || data.column.index === 3) {
+                            data.cell.styles.valign = 'bottom';
+                        }
+                    } else {
+                        data.cell.styles.valign = 'middle';
+                        if (data.column.index === 1) { data.cell.styles.halign = 'left'; data.cell.styles.fontStyle = 'normal'; }
+                    }
+                }
+            },
+            columnStyles: { 
+                0: { cellWidth: 9, halign: 'center' }, 
+                1: { cellWidth: 70 }, 
+                2: { cellWidth: 20 }, 
+                3: { cellWidth: 24 }, 
+                4: { cellWidth: 14, halign: 'center' }, 
+                5: { cellWidth: 13, halign: 'center' }, 
+                6: { cellWidth: 14, halign: 'center' }, 
+                7: { cellWidth: 14, halign: 'center' }, 
+                8: { cellWidth: 12, halign: 'center' } 
+            },
+            styles: { fontSize: 8, textColor: 0, lineColor: 0, overflow: 'linebreak' }, 
+            headStyles: { fillColor: 255, textColor: 0, fontStyle: 'bold', lineWidth: 0.3, halign: 'center', valign: 'middle' }, 
+            margin: { top: 10, left: 10, right: 10 }
+        });
+        
+        let filePdfName = "Cartellino_Lavorazione.pdf";
+        if(getVal('stdName') || getVal('finName')) filePdfName = `${getVal('stdName')}_${getVal('finName')}.pdf`.replace(/\s+/g, "_");
+        doc.save(filePdfName);
+    }
+</script>
+
+</body>
+</html>
