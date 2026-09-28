@@ -4,321 +4,410 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Cartellino di Lavorazione</title>
-<meta name="theme-color" content="#18191c">
+<meta name="theme-color" content="#0b0d12">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
 
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
-  /* RESET & BASE - Tonalità Soft-Dark per non affaticare la vista su Mobile */
-  * { box-sizing: border-box; }
+  /* RESET & VARIABLES - Modern Dark Theme (Ergonomico per Smartphone) */
+  :root {
+    --bg-main: #0c0e12;
+    --bg-card: #14171f;
+    --bg-input: #1b1f2b;
+    --bg-input-focus: #232838;
+    --border-color: #272c3d;
+    --border-hover: #3b4259;
+    --accent-primary: #10b981;
+    --accent-glow: rgba(16, 185, 129, 0.15);
+    --accent-blue: #3b82f6;
+    --accent-amber: #f59e0b;
+    --accent-red: #ef4444;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   
   body {
-    margin: 0; 
-    padding: 0; 
-    font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-    background-color: #121316; 
-    color: #e3e5e8;
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    padding-top: 60px; 
-    padding-bottom: 120px; 
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg-main);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-main);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 70px;
+    padding-bottom: 130px;
     overflow-x: hidden;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* BARRE DI NAVIGAZIONE E AZIONE */
-  .top-bar, .bottom-bar {
-    position: fixed; 
-    left: 0; 
-    width: 100%; 
-    background: #18191d; 
-    border-color: #2b2d33; 
-    border-style: solid;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
+  /* BARRA SUPERIORE */
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(12, 14, 18, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     z-index: 1000;
   }
   
-  .top-bar { 
-    top: 0; 
-    border-bottom-width: 1px; 
-    padding: 12px 16px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  }
-  
-  .bottom-bar { 
-    bottom: 0; 
-    border-top-width: 1px; 
-    padding: 12px; 
-    gap: 8px; 
-    box-sizing: border-box; 
-    flex-wrap: wrap;
-    background: rgba(24, 25, 29, 0.95);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.4);
-  }
-
-  /* CONTENITORE SCHEDA PRINCIPALE */
-  .sheet-container {
-    width: 96%; 
-    max-width: 1200px; 
-    background-color: #18191d; 
-    padding: 24px;
-    border: 1px solid #2b2d33; 
-    border-radius: 12px; 
-    margin-bottom: 20px; 
-    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-  }
-
-  /* TITOLI DELLE SEZIONI */
-  h1, h2 { margin: 0; text-transform: uppercase; }
-  h2 { 
-    font-size: 13px; 
+  .top-bar-title {
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.05em;
-    color: #66c088; 
-    border-bottom: 1px solid #283a2e; 
-    margin-top: 24px; 
-    margin-bottom: 16px; 
-    padding-bottom: 6px; 
-  }
-
-  /* INPUT & CAMPI COMPILABILI OPTIMIZED FOR TOUCH (16px previene lo zoom automatico iOS) */
-  input, select, textarea {
-    background: #22242a; 
-    border: 1px solid #32353e; 
-    border-radius: 6px; 
-    color: #f0f2f5; 
-    width: 100%; 
-    font-family: inherit; 
-    font-size: 16px; 
-    padding: 10px 12px; 
-    box-sizing: border-box;
-    transition: border-color 0.15s ease, background-color 0.15s ease;
-  }
-  
-  input:focus, select:focus, textarea:focus { 
-    border-color: #66c088; 
-    background-color: #262930;
-    outline: none; 
-  }
-  
-  label { 
-    font-size: 11px; 
-    color: #9aa0a6; 
-    font-weight: 600; 
-    display: block; 
-    margin-bottom: 6px; 
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: var(--accent-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .header-grid { 
-    display: grid; 
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
-    gap: 16px; 
-    margin-bottom: 20px; 
+  /* CONTAINER PRINCIPALE */
+  .sheet-container {
+    width: 95%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* SCHEDE SEZIONE */
+  .section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 22px;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    transition: border-color 0.2s ease;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .section-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-primary);
+  }
+
+  /* GRIGLIA INPUT */
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+
+  /* CAMPI DI INPUT (16px font previene auto-zoom su iOS) */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  input, select, textarea {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 12px 14px;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    background: var(--bg-input-focus);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-glow);
   }
 
   /* CARD OPERAZIONE */
-  .card-op { 
-    background: #1c1e23; 
-    border: 1px solid #2e313a; 
-    border-left: 4px solid #66c088; 
-    padding: 18px; 
-    border-radius: 10px; 
-    margin-bottom: 24px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  .card-op {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.4);
+    transition: border-color 0.2s ease;
   }
-  
-  .op-top-bar { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 16px; 
-    flex-wrap: wrap; 
-    gap: 10px;
+
+  .card-op::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent-primary);
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
   }
-  
-  .op-header { 
-    display: grid; 
-    grid-template-columns: 90px 1fr; 
-    gap: 16px; 
-    margin-bottom: 16px; 
-    align-items: end;
+
+  .op-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  
-  .op-body { margin-bottom: 16px; }
+
+  .op-badge {
+    background: var(--accent-glow);
+    color: var(--accent-primary);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* TOOLBAR DI COMANDO PER CARD */
+  .action-bar {
+    display: flex;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  .action-bar button {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    border-right: 1px solid var(--border-color);
+    transition: all 0.15s ease;
+  }
+
+  .action-bar button:last-child { border-right: none; }
+  .action-bar button:hover { background: var(--bg-input-focus); color: var(--text-main); }
+  .action-bar button.btn-danger:hover { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
 
   /* FASI DI LAVORAZIONE CONTAINER */
-  .fasi-container { 
-    background: #16171a; 
-    padding: 14px; 
-    border-radius: 8px; 
-    border: 1px solid #282a30;
+  .fasi-wrapper {
+    background: rgba(12, 14, 18, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-top: 16px;
   }
-  
+
   .fase-row {
-    display: grid; 
-    grid-template-columns: 65px minmax(160px, 2fr) repeat(5, minmax(70px, 1fr)) auto;
-    gap: 10px; 
-    align-items: end; 
-    margin-bottom: 12px; 
-    background: #22242a; 
-    padding: 12px; 
-    border-radius: 8px;
-    border: 1px solid #2d3038;
+    display: grid;
+    grid-template-columns: 70px minmax(180px, 2fr) repeat(5, minmax(70px, 1fr)) auto;
+    gap: 10px;
+    align-items: end;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    margin-bottom: 10px;
   }
-  
-  .fase-row > div { display: flex; flex-direction: column; }
 
-  /* TOOLBARS & PULSANTI PICCOLI */
-  .toolbar { 
-    display: flex; 
-    background: #2b2e36; 
-    border-radius: 6px; 
-    overflow: hidden; 
-    border: 1px solid #3a3e48; 
-  }
-  
-  .toolbar button { 
-    background: transparent; 
-    color: #e3e5e8; 
-    border: none; 
-    padding: 10px 14px; 
-    cursor: pointer; 
-    font-size: 14px; 
-    font-weight: 700; 
-    border-right: 1px solid #3a3e48; 
-    border-radius: 0; 
-  }
-  
-  .toolbar button:last-child { border-right: none; }
-  .toolbar button:hover { background: #383c47; }
-  .toolbar .btn-copy:hover { background: #d97706; color: #fff; }
-  .toolbar .btn-del { color: #f87171; }
-  .toolbar .btn-del:hover { background: #dc2626; color: #fff; }
-
-  /* PULSANTI GENERALI */
-  button { 
-    padding: 12px; 
-    border: none; 
-    border-radius: 6px; 
-    font-weight: 700; 
-    cursor: pointer; 
-    color: #ffffff; 
-    text-transform: uppercase; 
-    font-size: 12px; 
-    letter-spacing: 0.03em;
+  /* BOTTONI PRINCIPALI */
+  button.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
     transition: all 0.2s ease;
   }
-  
-  .btn-print { background: #2563eb; color: #fff; flex: 2; min-width: 140px; font-size: 13px; }
-  .btn-print:hover { background: #1d4ed8; }
-  
-  .btn-save { background: #0891b2; flex: 1; min-width: 100px; }
-  .btn-save:hover { background: #0e7490; }
-  
-  .btn-load { background: #d97706; flex: 1; min-width: 100px; }
-  .btn-load:hover { background: #b45309; }
-  
-  .btn-reset { background: #dc2626; flex: 1; min-width: 80px; }
-  .btn-reset:hover { background: #b91c1c; }
-  
-  .btn-add-op { 
-    background: #166534; 
-    color: #34d399;
-    border: 1px dashed #059669;
-    width: 100%; 
-    font-size: 14px; 
-    padding: 14px; 
-    margin-top: 10px; 
+
+  .btn-add-op {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-primary);
+    border: 1px dashed var(--accent-primary) !important;
+    width: 100%;
+    padding: 16px;
+    font-size: 13px;
+    border-radius: var(--radius-lg);
   }
-  .btn-add-op:hover { background: #14532d; color: #fff; }
-  
-  .btn-add-fase { 
-    background: #1e3a8a; 
-    color: #93c5fd;
-    border: 1px dashed #2563eb;
-    width: 100%; 
-    margin-top: 8px; 
+  .btn-add-op:hover { background: rgba(16, 185, 129, 0.2); }
+
+  .btn-add-fase {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent-blue);
+    border: 1px dashed var(--accent-blue) !important;
+    width: 100%;
+    margin-top: 10px;
     padding: 10px;
   }
-  .btn-add-fase:hover { background: #1e40af; color: #fff; }
-  
-  /* OTTIMIZZAZIONE SPECIFICA PER SMARTPHONE (Schermi stretti) */
+  .btn-add-fase:hover { background: rgba(59, 130, 246, 0.2); }
+
+  /* BOTTOM DOCK (Mobile Bottom Bar) */
+  .bottom-dock {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(12, 14, 18, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    padding: 12px 16px;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+  }
+
+  .dock-content {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-pdf { background: var(--accent-blue); color: #fff; flex: 2; min-width: 140px; }
+  .btn-pdf:hover { background: #2563eb; }
+
+  .btn-save { background: var(--accent-primary); color: #000; flex: 1; min-width: 110px; }
+  .btn-save:hover { background: #059669; color: #fff; }
+
+  .btn-load { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color) !important; flex: 1; min-width: 110px; }
+  .btn-load:hover { background: var(--bg-input-focus); }
+
+  .btn-reset { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.3) !important; }
+  .btn-reset:hover { background: var(--accent-red); color: #fff; }
+
+  /* MEDIA QUERY SMARTPHONE (Layout trasformato in card per schermi piccoli) */
   @media screen and (max-width: 900px) {
-    body { padding-top: 55px; padding-bottom: 140px; }
-    .sheet-container { padding: 14px; width: 98%; }
-    .op-header { grid-template-columns: 1fr; }
+    body { padding-top: 65px; padding-bottom: 150px; }
+    .sheet-container { width: 98%; }
     
     .fase-row {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       padding: 14px;
-      background: #1f2127;
-      border: 1px solid #32353e;
     }
     
     .fase-row > div { width: 100%; }
-    .col-ctrl { margin-top: 6px; }
-    .col-ctrl .toolbar { width: 100%; justify-content: space-between; }
-    .col-ctrl .toolbar button { flex: 1; padding: 12px 0; text-align: center; } 
+    
+    .fase-row .action-bar {
+      width: 100%;
+      margin-top: 4px;
+    }
+    
+    .fase-row .action-bar button {
+      flex: 1;
+      padding: 12px 0;
+      text-align: center;
+    }
   }
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-    <span style="color:#66c088; font-weight:700; font-size:15px; letter-spacing:0.05em;">CICLO DI LAVORAZIONE</span>
+  <div class="top-bar-title">⚙️ Cartellino di Lavorazione</div>
 </div>
 
 <div class="sheet-container" id="main-form">
-    <h2>Dati Studente</h2>
-    <div class="header-grid">
-        <div><label>Allievo</label><input type="text" id="stdName" placeholder="Nome e Cognome"></div>
-        <div><label>Classe</label><input type="text" id="stdClass" placeholder="Es. 3A MAT"></div>
-        <div><label>A.S.</label><input type="text" id="stdAS" value="2025/26"></div>
-        <div><label>Data Consegna</label><input type="date" id="stdDate"></div>
+    
+    <!-- DATI STUDENTE -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>Dati Studente</h2>
+      </div>
+      <div class="grid-3">
+        <div class="field-group"><label>Allievo</label><input type="text" id="stdName" placeholder="Nome e Cognome"></div>
+        <div class="field-group"><label>Classe</label><input type="text" id="stdClass" placeholder="Es. 3A MAT"></div>
+        <div class="field-group"><label>A.S.</label><input type="text" id="stdAS" value="2025/26"></div>
+        <div class="field-group"><label>Data Consegna</label><input type="date" id="stdDate"></div>
+      </div>
     </div>
 
-    <h2>Dati Elemento Finito</h2>
-    <div class="header-grid">
-        <div><label>Denominazione / Particolare</label><input type="text" id="finName" placeholder="Es. Perno flangiato"></div>
-        <div><label>Disegno N°</label><input type="text" id="finDraw"></div>
-        <div><label>Trattamenti</label><input type="text" id="finTreat"></div>
-        <div><label>Peso Finito [kg]</label><input type="number" id="finWeight" inputmode="decimal"></div>
+    <!-- ELEMENTO FINITO -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>Dati Elemento Finito</h2>
+      </div>
+      <div class="grid-3">
+        <div class="field-group"><label>Denominazione / Particolare</label><input type="text" id="finName" placeholder="Es. Perno flangiato"></div>
+        <div class="field-group"><label>Disegno N°</label><input type="text" id="finDraw"></div>
+        <div class="field-group"><label>Trattamenti</label><input type="text" id="finTreat"></div>
+        <div class="field-group"><label>Peso Finito [kg]</label><input type="number" id="finWeight" inputmode="decimal"></div>
+      </div>
     </div>
 
-    <h2>Dati Semilavorato</h2>
-    <div class="header-grid">
-        <div><label>Materiale</label><input type="text" id="matName" placeholder="Es. C45 / Fe510"></div>
-        <div><label>Ricavato da</label><input type="text" id="matRaw" placeholder="Es. Tondo Ø40x100"></div>
-        <div><label>Rm [N/mm²]</label><input type="number" id="matRm" inputmode="numeric"></div>
-        <div><label>HBW</label><input type="number" id="matHBW" inputmode="numeric"></div>
-        <div><label>Peso Grezzo [kg]</label><input type="number" id="matMass" inputmode="decimal"></div>
-        <div><label>Quantità</label><input type="number" id="matQty" value="1" inputmode="numeric"></div>
+    <!-- SEMILAVORATO -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2>Dati Semilavorato</h2>
+      </div>
+      <div class="grid-3">
+        <div class="field-group"><label>Materiale</label><input type="text" id="matName" placeholder="Es. C45 / Fe510"></div>
+        <div class="field-group"><label>Ricavato da</label><input type="text" id="matRaw" placeholder="Es. Tondo Ø40x100"></div>
+        <div class="field-group"><label>Rm [N/mm²]</label><input type="number" id="matRm" inputmode="numeric"></div>
+        <div class="field-group"><label>HBW</label><input type="number" id="matHBW" inputmode="numeric"></div>
+        <div class="field-group"><label>Peso Grezzo [kg]</label><input type="number" id="matMass" inputmode="decimal"></div>
+        <div class="field-group"><label>Quantità</label><input type="number" id="matQty" value="1" inputmode="numeric"></div>
+      </div>
     </div>
 
-    <h2>Operazioni e Fasi</h2>
+    <!-- OPERAZIONI E FASI -->
+    <div class="section-header" style="margin-top: 10px;">
+      <h2>Operazioni e Fasi di Lavorazione</h2>
+    </div>
+    
     <div id="operazioni-list"></div>
 
-    <button class="btn-add-op" onclick="aggiungiOperazione()">+ Aggiungi Nuova Operazione</button>
+    <button class="btn btn-add-op" onclick="aggiungiOperazione()">+ Aggiungi Nuova Operazione</button>
 </div>
 
 <input type="file" id="fileLoader" style="display:none;" accept=".json" onchange="gestisciCaricamentoFile(event)">
 
-<div class="bottom-bar">
-    <button class="btn-save" onclick="salvaSuFile()">SCARICA BOZZA</button>
-    <button class="btn-load" onclick="document.getElementById('fileLoader').click()">CARICA BOZZA</button>
-    <button class="btn-print" onclick="generaPDF()">STAMPA PDF</button>
-    <button class="btn-reset" id="btnReset" onclick="resetDati()">RESET</button>
+<!-- BARRA DOCK INFERIORE -->
+<div class="bottom-dock">
+  <div class="dock-content">
+    <button class="btn btn-save" onclick="salvaSuFile()">SCARICA BOZZA</button>
+    <button class="btn btn-load" onclick="document.getElementById('fileLoader').click()">CARICA BOZZA</button>
+    <button class="btn btn-pdf" onclick="generaPDF()">STAMPA PDF</button>
+    <button class="btn btn-reset" id="btnReset" onclick="resetDati()">RESET</button>
+  </div>
 </div>
 
 <script>
@@ -345,32 +434,33 @@
         const html = `
             <div class="card-op" id="operazione-${opId}">
                 <div class="op-top-bar">
-                    <h3 style="margin:0; color:#66c088; font-size:15px; letter-spacing:0.03em;">OPERAZIONE</h3>
-                    <div class="toolbar">
+                    <span class="op-badge">OPERAZIONE</span>
+                    <div class="action-bar">
                         <button title="Sposta Su" onclick="spostaOperazione(this, -1)">▲</button>
                         <button title="Sposta Giù" onclick="spostaOperazione(this, 1)">▼</button>
-                        <button class="btn-copy" title="Duplica" onclick="duplicaOperazione('${opId}')">📋</button>
-                        <button class="btn-del" title="Rimuovi" onclick="rimuoviOperazione('${opId}')">✕</button>
+                        <button title="Duplica" onclick="duplicaOperazione('${opId}')">📋</button>
+                        <button class="btn-danger" title="Rimuovi" onclick="rimuoviOperazione('${opId}')">✕</button>
                     </div>
                 </div>
-                <div class="op-header">
-                    <div>
-                        <label>Num</label>
-                        <input type="text" class="op-num" value="${defaultNum}" inputmode="numeric" style="font-weight:700; color:#66c088;" onchange="rinumeraFasiContainer('${opId}')">
+                <div class="grid-2" style="margin-bottom: 14px;">
+                    <div class="field-group" style="max-width: 120px;">
+                        <label>Num Op.</label>
+                        <input type="text" class="op-num" value="${defaultNum}" inputmode="numeric" style="font-weight:700; color:var(--accent-primary);" onchange="rinumeraFasiContainer('${opId}')">
                     </div>
-                    <div>
+                    <div class="field-group">
                         <label>Macchina / Postazione</label>
                         <input type="text" class="op-mac-name" placeholder="Es. Tornio Parallelo CNC" value="${savedMacName}">
                     </div>
                 </div>
-                <div class="op-body">
+                <div class="field-group">
                     <label>Utensili, Attrezzi e Calibri</label>
                     <textarea class="op-tools" rows="2" placeholder="Elenco attrezzatura...">${savedTools}</textarea>
                 </div>
-                <div class="fasi-container" id="fasi-${opId}">
-                    <label style="color:#60a5fa; margin-bottom:10px; font-size:11px;">FASI DI LAVORAZIONE</label>
+                <div class="fasi-wrapper">
+                    <label style="color:var(--accent-blue); margin-bottom:10px; font-size:11px; display:block;">FASI DI LAVORAZIONE</label>
+                    <div id="fasi-${opId}"></div>
+                    <button class="btn btn-add-fase" onclick="aggiungiFase('${opId}')">+ AGGIUNGI FASE</button>
                 </div>
-                <button class="btn-add-fase" onclick="aggiungiFase('${opId}')">+ AGGIUNGI FASE</button>
             </div>
         `;
         document.getElementById('operazioni-list').insertAdjacentHTML('beforeend', html);
@@ -420,14 +510,14 @@
 
         const html = `
             <div class="fase-row">
-                <div class="col-num"><label>N°</label><input type="text" class="fase-num" value="${fNum}" readonly style="background:#1a1b20; color:#9aa0a6; font-size:13px;"></div>
-                <div class="col-desc"><label>Descrizione Fase</label><input type="text" class="fase-desc" value="${fData ? (fData.desc || '') : ''}"></div>
-                <div class="col-vt"><label>Vt [m/min]</label><input type="number" class="fase-vt" value="${fData ? (fData.vt || '') : ''}" inputmode="decimal"></div>
-                <div class="col-n"><label>n [rpm]</label><input type="number" class="fase-n" value="${fData ? (fData.n || '') : ''}" inputmode="decimal"></div>
-                <div class="col-f"><label>f [mm/g]</label><input type="text" class="fase-f" value="${fData ? (fData.f || '') : ''}" inputmode="decimal"></div>
-                <div class="col-p"><label>ap [mm]</label><input type="number" class="fase-p" value="${fData ? (fData.p || '') : ''}" inputmode="decimal"></div>
-                <div class="col-tc"><label>tc [min]</label><input type="number" class="fase-tc" value="${fData ? (fData.tc || '') : ''}" inputmode="decimal"></div>
-                <div class="col-ctrl"><div class="toolbar"><button title="Su" onclick="spostaFase(this, -1)">▲</button><button title="Giù" onclick="spostaFase(this, 1)">▼</button><button class="btn-copy" title="Copia" onclick="duplicaFase(this, '${opId}')">📋</button><button class="btn-del" title="Elimina" onclick="rimuoviFase(this, '${opId}')">✕</button></div></div>
+                <div class="field-group"><label>N°</label><input type="text" class="fase-num" value="${fNum}" readonly style="background:var(--bg-main); color:var(--text-muted); font-size:13px;"></div>
+                <div class="field-group"><label>Descrizione Fase</label><input type="text" class="fase-desc" value="${fData ? (fData.desc || '') : ''}"></div>
+                <div class="field-group"><label>Vt [m/min]</label><input type="number" class="fase-vt" value="${fData ? (fData.vt || '') : ''}" inputmode="decimal"></div>
+                <div class="field-group"><label>n [rpm]</label><input type="number" class="fase-n" value="${fData ? (fData.n || '') : ''}" inputmode="decimal"></div>
+                <div class="field-group"><label>f [mm/g]</label><input type="text" class="fase-f" value="${fData ? (fData.f || '') : ''}" inputmode="decimal"></div>
+                <div class="field-group"><label>ap [mm]</label><input type="number" class="fase-p" value="${fData ? (fData.p || '') : ''}" inputmode="decimal"></div>
+                <div class="field-group"><label>tc [min]</label><input type="number" class="fase-tc" value="${fData ? (fData.tc || '') : ''}" inputmode="decimal"></div>
+                <div class="field-group"><div class="action-bar"><button title="Su" onclick="spostaFase(this, -1)">▲</button><button title="Giù" onclick="spostaFase(this, 1)">▼</button><button title="Copia" onclick="duplicaFase(this, '${opId}')">📋</button><button class="btn-danger" title="Elimina" onclick="rimuoviFase(this, '${opId}')">✕</button></div></div>
             </div>
         `;
         c.insertAdjacentHTML('beforeend', html);
@@ -465,25 +555,28 @@
         
         if (btn.innerText === "RESET") {
             btn.innerText = "CONFERMA?";
-            btn.style.backgroundColor = "#991b1b"; 
+            btn.style.backgroundColor = "var(--accent-red)";
+            btn.style.color = "#fff";
             
             resetTimer = setTimeout(() => {
                 btn.innerText = "RESET";
-                btn.style.backgroundColor = "#dc2626";
+                btn.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+                btn.style.color = "var(--accent-red)";
             }, 3000);
             
         } else {
             clearTimeout(resetTimer);
             btn.innerText = "RESET";
-            btn.style.backgroundColor = "#dc2626";
+            btn.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+            btn.style.color = "var(--accent-red)";
             
             localStorage.removeItem('cartellino_bozza'); 
-            document.querySelectorAll('.header-grid input').forEach(inp => inp.value = '');
+            document.querySelectorAll('.sheet-container input').forEach(inp => inp.value = '');
             document.getElementById('stdAS').value = '2025/26'; 
             document.getElementById('matQty').value = '1';
             document.getElementById('operazioni-list').innerHTML = '';
             aggiungiOperazione(); 
-            window.scrollTo(0, 0);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }
 
@@ -541,7 +634,7 @@
                 popolaCampi(jsonData); 
                 alert("Dati caricati correttamente dal file!");
             } catch (err) { 
-                alert("Si è verificato un errore nella lettura del file. Verifica che il file non sia corrotto."); 
+                alert("Si è verificato un errore nella lettura del file."); 
             } finally { 
                 event.target.value = ""; 
             } 
@@ -592,7 +685,6 @@
         const tableBody = [];
         document.querySelectorAll('.card-op').forEach((op) => {
             const fasi = op.querySelectorAll('.fase-row');
-            
             const macName = op.querySelector('.op-mac-name').value;
 
             tableBody.push({ 
@@ -640,7 +732,7 @@
                         
                         if (data.column.index === 0) data.cell.styles.fontStyle = 'bold';
                         
-                        // Spazio per lo schizzo a 60mm
+                        // Spazio riservato al disegno manuale a 60mm
                         if (data.column.index === 1) data.cell.styles.minCellHeight = 60; 
                         
                         if (data.column.index === 2 || data.column.index === 3) {
